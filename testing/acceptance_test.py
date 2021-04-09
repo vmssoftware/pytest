@@ -1322,6 +1322,3 @@ def test_no_brokenpipeerror_message(pytester: Pytester) -> None:
 
     # Cleanup.
     popen.stderr.close()
-
-if __name__ == "__main__":
-    pytest.main([__file__ + "::TestInvocationVariants::test_pydoc"])
