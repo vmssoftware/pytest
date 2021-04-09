@@ -1303,6 +1303,10 @@ def test_tee_stdio_captures_and_live_prints(pytester: Pytester) -> None:
     sys.platform == "win32",
     reason="Windows raises `OSError: [Errno 22] Invalid argument` instead",
 )
+@pytest.mark.skipif(
+    sys.platform == "OpenVMS",
+    reason="OpenVMS just hangs",
+)
 def test_no_brokenpipeerror_message(pytester: Pytester) -> None:
     """Ensure that the broken pipe error message is supressed.
 
@@ -1318,3 +1322,6 @@ def test_no_brokenpipeerror_message(pytester: Pytester) -> None:
 
     # Cleanup.
     popen.stderr.close()
+
+if __name__ == "__main__":
+    pytest.main([__file__ + "::TestInvocationVariants::test_pydoc"])

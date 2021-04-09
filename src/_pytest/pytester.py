@@ -1343,15 +1343,25 @@ class Pytester:
 
         with p1.open("w", encoding="utf8") as f1, p2.open("w", encoding="utf8") as f2:
             now = timing.time()
-            popen = self.popen(
-                cmdargs,
-                stdin=stdin,
-                stdout=f1,
-                stderr=f2,
-                close_fds=(sys.platform != "win32"),
-            )
-            if popen.stdin is not None:
-                popen.stdin.close()
+            if sys.platform == 'OpenVMS':
+                if stdin is self.CLOSE_STDIN:
+                    stdin = None
+                popen = self.popen(
+                    cmdargs,
+                    stdin=stdin,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                )
+            else:
+                popen = self.popen(
+                    cmdargs,
+                    stdin=stdin,
+                    stdout=f1,
+                    stderr=f2,
+                    close_fds=(sys.platform != "win32"),
+                )
+                if popen.stdin is not None:
+                    popen.stdin.close()
 
             def handle_timeout() -> None:
                 __tracebackhide__ = True
@@ -1366,16 +1376,24 @@ class Pytester:
                 raise self.TimeoutExpired(timeout_message)
 
             if timeout is None:
+                if sys.platform == 'OpenVMS':
+                    out, err = popen.communicate()
                 ret = popen.wait()
             else:
                 try:
+                    if sys.platform == 'OpenVMS':
+                        out, err = popen.communicate(timeout=timeout)
                     ret = popen.wait(timeout)
                 except subprocess.TimeoutExpired:
                     handle_timeout()
 
-        with p1.open(encoding="utf8") as f1, p2.open(encoding="utf8") as f2:
-            out = f1.read().splitlines()
-            err = f2.read().splitlines()
+        if sys.platform == 'OpenVMS':
+            out = (out or b'').decode("utf8").splitlines()
+            err = (err or b'').decode("utf8").splitlines()
+        else:
+            with p1.open(encoding="utf8") as f1, p2.open(encoding="utf8") as f2:
+                out = f1.read().splitlines()
+                err = f2.read().splitlines()
 
         self._dump_lines(out, sys.stdout)
         self._dump_lines(err, sys.stderr)
